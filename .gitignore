@@ -1,0 +1,23 @@
+# compiled python and c scripts
+*.py[cod]
+*.so
+
+# platform/system
+.DS_Store
+*.swp
+
+# virtualenv and pip
+bin/
+build/
+include/
+lib/
+local/
+share/
+
+# ide
+.idea/
+
+# secure
+local_settings.py
+*.db
+*.ini

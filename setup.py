@@ -11,14 +11,14 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='django-aes-fields',
-    version='0.1',
+    version='0.1.1',
 
     packages=['aes_fields'],
     include_package_data=True,
 
     install_requires=['pycrypto>=2.6'],
 
-    license='WTFPL',
+    license='VincePL',
 
     description='AES field extensions for models.',
     long_description=README,

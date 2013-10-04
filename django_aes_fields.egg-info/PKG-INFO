@@ -1,11 +1,11 @@
 Metadata-Version: 1.0
 Name: django-aes-fields
-Version: 0.1
+Version: 0.1.1
 Summary: AES field extensions for models.
 Home-page: UNKNOWN
 Author: Vince Forgione
 Author-email: v.forgione@gmail.com
-License: WTFPL
+License: VincePL
 Description: =================
         django-aes-fields
         =================

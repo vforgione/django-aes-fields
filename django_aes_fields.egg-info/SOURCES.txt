@@ -1,7 +1,6 @@
 setup.py
 aes_fields/__init__.py
-aes_fields/base_objects.py
-aes_fields/exceptions.py
+aes_fields/errors.py
 aes_fields/fields.py
 django_aes_fields.egg-info/PKG-INFO
 django_aes_fields.egg-info/SOURCES.txt

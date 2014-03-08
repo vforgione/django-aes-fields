@@ -20,6 +20,11 @@ from django.db import models
 from . import BLOCK_SIZE
 from objects import AesObject
 
+try:
+    from south.modelsinspector import add_introspection_rules
+except ImportError:
+    add_introspection_rules = lambda x, y: x or y  # alias the function call - makes it do nothing essentially
+
 
 class BaseAesField(models.Field):
 
@@ -77,3 +82,9 @@ class AesIPAddressField(BaseAesField):
 
     def get_internal_type(self):
         return 'IPAddressField'
+
+
+add_introspection_rules([], '^aes_fields\.fields\.AesCharField')
+add_introspection_rules([], '^aes_fields\.fields\.AesEmailField')
+add_introspection_rules([], '^aes_fields\.fields\.AesTextField')
+add_introspection_rules([], '^aes_fields\.fields\.AesIPAddressField')

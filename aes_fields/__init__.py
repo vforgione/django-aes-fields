@@ -1,55 +1,46 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+"""
+__init__.py
 
-import base64
-import re
+pulls in settings declared in settings.py and creates a cipher object
+"""
+
+from django.core.exceptions import ImproperlyConfigured
+from django.conf import settings
 
 
-BASE64_REGEX = re.compile(r'(?:[A-Za-z0-9+/]{4}){2,}(?:[A-Za-z0-9+/]{2}[AEIMQUYcgkosw048]=|[A-Za-z0-9+/][AQgw]==)')
+# the key used for creating the aes cipher object
+try:
+    KEY = str(settings.AES_KEY)
+    assert len(KEY) == 32
+except ImproperlyConfigured:
+    raise ImproperlyConfigured("AES_KEY is required to be in your settings")
+except AssertionError:
+    raise ImproperlyConfigured("AES_KEY must be a string of length 32")
 
 
-class AesObject(object):
+# the character used to pad out plaintext to meet block size
+try:
+    PADDING_CHAR = str(settings.AES_PADDING_CHAR)
+    assert len(PADDING_CHAR) == 1
+except ImproperlyConfigured:
+    PADDING_CHAR = ' '  # white space gets stripped anyway, so why not?
+except AssertionError:
+    raise ImproperlyConfigured("AES_PADDING_CHAR must be string of length 1")
 
-    def __init__(self, value):
-        """initializes the object
 
-        :param value: a non-null datum
-        """
-        if value is not None:
-            self.value = unicode(value)
-        else:
-            raise TypeError("AesObject value cannot be None")
+# the block sized used for encryption
+try:
+    BLOCK_SIZE = int(settings.AES_BLOCK_SIZE)
+    assert BLOCK_SIZE in (16, 24, 32)
+except ImproperlyConfigured:
+    BLOCK_SIZE = 32
+except ValueError:
+    raise ImproperlyConfigured("AES_BLOCK_SIZE must be an integer")
+except AssertionError:
+    raise ImproperlyConfigured("AES_BLOCK_SIZE must be equal to 16, 24 or 32")
 
-    def is_encrypted(self):
-        """determine if the object's value is encrypted
 
-        :returns: True if the value is encrypted; else False
-        """
-        return re.match(BASE64_REGEX, self.value) is not None
+# build cipher object
+from Crypto.Cipher import AES
 
-    def encrypt(self, cipher, block_size, padding):
-        """encrypts the value of the object
-
-        :param cipher: an AES cipher object
-        :param block_size: an integer dictating the block size to be used in the encryption rounds
-        :param padding: a character to be used to pad the object's value
-        """
-        if self.is_encrypted():
-            return
-        padded = self.value + (block_size - len(self.value) % block_size) * unicode(padding)
-        encrypted = cipher.encrypt(padded)
-        encoded = base64.b64encode(encrypted)
-        self.value = encoded
-
-    def decrypt(self, cipher, padding):
-        """decrypts the object's value
-
-        :param cipher: an AES cipher object
-        :param padding: the character used to pad the plaintext value for encryption that needs to now be stripped
-        """
-        if not self.is_encrypted():
-            return
-        decoded = base64.b64decode(self.value)
-        decrypted = cipher.decrypt(decoded)
-        stripped = decrypted.rstrip(padding)
-        self.value = stripped
+CIPHER = AES.new(KEY)

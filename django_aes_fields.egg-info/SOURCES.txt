@@ -1,9 +1,0 @@
-setup.py
-aes_fields/__init__.py
-aes_fields/errors.py
-aes_fields/fields.py
-django_aes_fields.egg-info/PKG-INFO
-django_aes_fields.egg-info/SOURCES.txt
-django_aes_fields.egg-info/dependency_links.txt
-django_aes_fields.egg-info/requires.txt
-django_aes_fields.egg-info/top_level.txt

@@ -1,109 +1,70 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+"""
+fields.py
 
-from Crypto.Cipher import AES
-from django.conf import settings
+class used to implement the feature of the application - AES encrypted fields.
+this is not comprehensive coverage of all django fields; rather, it covers the main
+fields that would need to be covered in cases of PII or other security-related
+use cases.
+
+fields covered/wrapped:
+    - CharField
+    - EmailField
+    - TextField
+    - IPAddressField
+
+all fields are prefixed with Aes to distinguish from the normal, plaintext fields
+"""
+
 from django.db import models
 
-from . import AesObject
-from .errors import MissingConfigurationError, MissingRequiredSettingError, default_value_warning
-
-try:
-    from south.modelsinspector import add_introspection_rules
-except ImportError:
-    add_introspection_rules = lambda x, y: x or y  # redefine to not do anything
-
-# get configuration from settings
-try:
-    CONFIG = settings.AES_FIELDS_CONFIGURATION
-except KeyError:
-    raise MissingConfigurationError()
-
-try:
-    KEY = CONFIG['KEY']
-except KeyError:
-    raise MissingRequiredSettingError('KEY')
-
-try:
-    PADDING = CONFIG['PADDING']
-    if len(PADDING) != 1:
-        raise ValueError("`PADDING` must have len() = 1 (single character)")
-except KeyError:
-    PADDING = '#'
-    default_value_warning('PADDING', '#')
-
-try:
-    BLOCK_SIZE = CONFIG['BLOCK_SIZE']
-    # let the AES module handle exceptions for block size
-except KeyError:
-    BLOCK_SIZE = 32
-    default_value_warning('BLOCK_SIZE', 32)
-
-try:
-    PREFIX = CONFIG['PREFIX']
-    if PREFIX is not None and not str(PREFIX).endswith(':'):
-        PREFIX = str(PREFIX) + ':'
-except KeyError:
-    PREFIX = None
-    default_value_warning('PREFIX', None)
+from . import BLOCK_SIZE
+from objects import AesObject
 
 
-# create cipher object
-CIPHER = AES.new(KEY)
-
-
-# define fields
 class BaseAesField(models.Field):
 
     __metaclass__ = models.SubfieldBase
 
     def __init__(self, *args, **kwargs):
-        kwargs['max_length'] += (BLOCK_SIZE - (kwargs['max_length'] % BLOCK_SIZE)) % BLOCK_SIZE
+        # ensure proper length is given to the value
+        kwargs['max_length'] += (BLOCK_SIZE - kwargs['max_length'] % BLOCK_SIZE) % BLOCK_SIZE
         super(BaseAesField, self).__init__(*args, **kwargs)
 
     def to_python(self, value):
-        """decrypts the value
-
-        :param value: an encrypted value
+        """
+        decrypts the value -- for data coming from the database to the client
         """
         if isinstance(value, AesObject):
             obj = value
         else:
-            if PREFIX and str(value).startswith(PREFIX):
-                value = value[len(PREFIX):]
             obj = AesObject(value)
-        if obj.is_encrypted():
-            obj.decrypt(CIPHER, PADDING)
+        if obj.is_encrypted:
+            obj.decrypt()
         return obj.value
 
     def get_db_prep_value(self, value, connection, prepared=False):
-        """encrypts (and optionally prefixes) the value
-
-        :param value: a plaintext value
-        :param connection: the database connection
-        :param prepared: flags if the value has been prepared
+        """
+        encrypts the value -- for data coming from the client to the database
         """
         if isinstance(value, AesObject):
             obj = value
         else:
             obj = AesObject(value)
-        if not obj.is_encrypted():
-            obj.encrypt(CIPHER, BLOCK_SIZE, PADDING)
-        if PREFIX and not str(obj.value).startswith(PREFIX):
-            return PREFIX + obj.value
+        if not obj.is_encrypted:
+            obj.encrypt()
         return obj.value
-
-
-class AesEmailField(BaseAesField):
-
-    def get_internal_type(self):
-        return 'EmailField'
 
 
 class AesCharField(BaseAesField):
 
     def get_internal_type(self):
         return 'CharField'
+
+
+class AesEmailField(BaseAesField):
+
+    def get_internal_type(self):
+        return 'EmailField'
 
 
 class AesTextField(BaseAesField):
@@ -116,16 +77,3 @@ class AesIPAddressField(BaseAesField):
 
     def get_internal_type(self):
         return 'IPAddressField'
-
-
-class AesGenericIPAddressField(BaseAesField):
-
-    def get_internal_type(self):
-        return 'GenericIPAddressField'
-
-
-add_introspection_rules([], '^aes_fields\.fields\.AesEmailField')
-add_introspection_rules([], '^aes_fields\.fields\.AesCharField')
-add_introspection_rules([], '^aes_fields\.fields\.AesTextField')
-add_introspection_rules([], '^aes_fields\.fields\.AesIPAddressField')
-add_introspection_rules([], '^aes_fields\.fields\.AesGenericIPAddressField')
